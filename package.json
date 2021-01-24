@@ -1,11 +1,12 @@
 {
   "name": "@rbxts/dispatcher",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "A multi-purpose dispatcher for easy cross-boundary and internal communication",
   "main": "out/init.lua",
   "scripts": {
     "prepublishOnly": "rbxtsc"
   },
+  "files": ["out/", "package.json", "README.md"],
   "keywords": [],
   "author": "xethlyx",
   "license": "ISC",

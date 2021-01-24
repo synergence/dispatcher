@@ -1,0 +1,22 @@
+{
+  "name": "@rbxts/dispatcher",
+  "version": "1.0.0",
+  "description": "A multi-purpose dispatcher for easy cross-boundary and internal communication",
+  "main": "out/init.lua",
+  "scripts": {
+    "prepublishOnly": "rbxtsc"
+  },
+  "keywords": [],
+  "files": ["out/**.lua", "out/index.d.ts"],
+  "author": "xethlyx",
+  "license": "ISC",
+  "publishConfig": {
+    "access": "public"
+  },
+  "types": "out/index.d.ts",
+  "devDependencies": {
+    "@rbxts/compiler-types": "^1.0.0-beta.15.0",
+    "@rbxts/types": "^1.0.441",
+    "typescript": "^4.1.3"
+  }
+}

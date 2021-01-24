@@ -7,7 +7,6 @@
     "prepublishOnly": "rbxtsc"
   },
   "keywords": [],
-  "files": ["out/**.lua", "out/index.d.ts"],
   "author": "xethlyx",
   "license": "ISC",
   "publishConfig": {

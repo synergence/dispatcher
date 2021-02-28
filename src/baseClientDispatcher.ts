@@ -89,11 +89,20 @@ export class BaseClientDispatcher<
 	}
 
 	/**
-	 * Invoke a function for the server to handle
+	 * Invoke a function for the server to handle. Use invokeAsync if you want to use promises
 	 * @param handle The handle of the event
 	 * @param args The arguments of the event
 	 */
 	public invoke<Handle extends keyof ServerFunctions>(handle: Handle, ...args: Parameters<ServerFunctions[Handle]>): ReturnType<ServerFunctions[Handle]> {
 		return this.remoteFunction.InvokeServer(handle, ...args as Array<unknown>);
+	}
+
+	/**
+	 * Invoke a function for the server to handle
+	 * @param handle The handle of the event
+	 * @param args The arguments of the event
+	 */
+	public async invokeAsync<Handle extends keyof ServerFunctions>(handle: Handle, ...args: Parameters<ServerFunctions[Handle]>): Promise<ReturnType<ServerFunctions[Handle]>> {
+		return new Promise(res => res(this.remoteFunction.InvokeServer(handle, ...args as Array<unknown>)));
 	}
 }

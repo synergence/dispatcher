@@ -6,7 +6,12 @@
   "scripts": {
     "prepublishOnly": "rbxtsc"
   },
-  "files": ["out/**.lua", "out/**.ts", "package.json", "README.md"],
+  "files": [
+    "out/**.lua",
+    "out/**.ts",
+    "package.json",
+    "README.md"
+  ],
   "keywords": [],
   "author": "xethlyx",
   "license": "ISC",
@@ -15,8 +20,8 @@
   },
   "types": "out/index.d.ts",
   "devDependencies": {
-    "@rbxts/compiler-types": "^1.0.0-beta.15.0",
-    "@rbxts/types": "^1.0.441",
-    "typescript": "^4.1.3"
+    "@rbxts/compiler-types": "^1.0.0-types.0",
+    "@rbxts/types": "^1.0.464",
+    "typescript": "^4.2.3"
   }
 }

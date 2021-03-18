@@ -1,4 +1,4 @@
-import { ClassOperationMap, BaseDispatcher, OperationMap, OperationIdArray, OperationExternalIdentifier } from 'baseDispatcher';
+import { BaseDispatcher, ClassOperationMap, OperationExternalIdentifier, OperationIdArray, OperationMap } from 'baseDispatcher';
 
 const ReplicatedStorage = game.GetService('ReplicatedStorage');
 
@@ -21,57 +21,57 @@ export type UnknownOperationMap<T extends OperationMap> = {[K in keyof T]: (...a
  * Base dispatcher for the server. Note that you will need to require this at least once on the server for it to work.
  * @example
  * // remoteData.d.ts (/shared/remoteData.d.ts)
- * 
+ *
  * export type DefinedServerOperations = {
  *     serverOperation(text: string): void;
  * }
- * 
+ *
  * export type DefinedClientOperations = {
  *     clientOperation(text: string): void;
  * }
- * 
+ *
  * export type DefinedServerEvents = {
  *     serverEvent(text: string): void;
  * }
- * 
+ *
  * export type DefinedServerFunctions = {
  *     serverFunction(text: string): boolean;
  * }
- * 
+ *
  * // serverDispatcher.ts (/server/ServerDispatcher.ts)
  * import { BaseServerDispatcher } from '@rbxts/dispatcher';
  * import { DefinedClientOperations, DefinedServerEvents, DefinedServerFunctions, DefinedServerOperations } from 'shared/remoteData';
- * 
+ *
  * export const serverDispatcher = new BaseServerDispatcher<
  *     DefinedServerOperations,
  *     DefinedClientOperations,
  *     DefinedServerEvents,
  *     DefinedServerFunctions
  * >();
- * 
+ *
  * // To use the dispatcher..
  * import { serverDispatcher } from 'server/serverDispatcher';
- * 
+ *
  * // Listen to a server event
  * serverDispatcher.on('serverEvent', text => {
  *     print(text);
  * });
- * 
+ *
  * // Handle a server function
  * serverDispatcher.on('serverFunction', text => {
  *     print(text);
- * 
+ *
  *     return true;
  * });
- * 
+ *
  * // Handle a server dispatch
  * serverDispatcher.listen('serverOperation', text => {
  *     print(text);
  * });
- * 
+ *
  * // Fire a client event
  * serverDispatcher.emit('clientOperation', 'Hello world!');
- * 
+ *
  * // Dispatch a event for the server
  * serverDispatcher.dispatch('serverOperation', 'Hello world!');
  */
@@ -91,7 +91,7 @@ export class BaseServerDispatcher<
 		this.remoteEvent.Name = 'DispatcherEvent';
 		this.remoteEvent.Parent = ReplicatedStorage;
 		this.remoteEvent.OnServerEvent.Connect((player, boundEvent, ...args: Array<unknown>) => this.onEvent(player, boundEvent, ...args));
-		
+
 		this.remoteFunction = new Instance('RemoteFunction');
 		this.remoteFunction.Name = 'DispatcherFunction';
 		this.remoteFunction.Parent = ReplicatedStorage;
@@ -109,7 +109,7 @@ export class BaseServerDispatcher<
 	private verifyRemoteExistance<T>(key: unknown, table: T): key is keyof T {
 		if (!typeIs(key, 'string')) return false;
 		if (!(key in table)) return false;
-		
+
 		return true;
 	}
 
@@ -155,7 +155,7 @@ export class BaseServerDispatcher<
 	 */
 	private handleEvent<Handle extends keyof ServerEvents>(player: Player, handle: Handle, ...args: Array<unknown>) {
 		const incomingEvents = this.incomingEvents[handle] as OperationIdArray<UnknownOperationMap<ServerEvents>, Handle> | undefined;
-		
+
 		if (incomingEvents) {
 			for (const [, handler] of incomingEvents) {
 				//@ts-ignore
@@ -198,7 +198,7 @@ export class BaseServerDispatcher<
 	 * @param handler The handler of the vent
 	 */
 	public on<Handle extends keyof ServerEvents>(handle: Handle, handler: UnknownOperationMap<ServerEvents>[Handle]): OperationExternalIdentifier<UnknownOperationMap<ServerEvents>> {
-		this.verbosePrint(`Bound EVNT: "${handle}"`);
+		this.verbosePrint('bind', `Bound EVNT: "${handle}"`);
 		return this.bindListen<Handle, UnknownOperationMap<ServerEvents>>(handle, this.incomingEvents, handler);
 	}
 
@@ -208,7 +208,7 @@ export class BaseServerDispatcher<
 	 * @param handler The handler of the invoked function
 	 */
 	public handle<Handle extends keyof ServerFunctions>(handle: Handle, handler: UnknownOperationMap<ServerFunctions>[Handle]) {
-		this.verbosePrint(`Bound FUNC: "${handle}"`);
+		this.verbosePrint('bind', `Bound FUNC: "${handle}"`);
 		this.incomingFunctions[handle] = handler;
 	}
 }

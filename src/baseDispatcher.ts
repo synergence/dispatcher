@@ -21,7 +21,7 @@ export interface OperationExternalIdentifier<Operations extends OperationMap> {
 	group: ClassOperationMap<Operations>;
 	handle: keyof Operations;
 	id: number;
-} 
+}
 
 /**
  * The base dispatcher to be extended off of
@@ -45,20 +45,31 @@ export class BaseDispatcher<Operations extends OperationMap> {
 	 * If the dispatcher is verbose
 	 */
 	public verbose = RunService.IsStudio();
-	
+
+	/**
+	 * Tags to be hidden by verbosePrint. Default tags:
+	 *
+	 * * `init` Initialization (eg. Finished initialization)
+	 * * `bind` When something binds to .listen
+	 * * `bindpost` When something binds to .listenPost
+	 * * (`handle`) - This would be the first argument in BaseDispatcher.dispatch, useful if you have functions that fire repeatedly and you want to hide them
+	 */
+	public hiddenVerboseTags = new Set<string | number | symbol>();
+
 	/**
 	 * Construct a dispatcher
 	 */
 	constructor() {
-		this.verbosePrint('Finished initialization');
+		this.verbosePrint('init', 'Finished initialization');
 	}
 
 	/**
 	 * Prints a message if the dispatcher's mode is set to verbose
 	 * @param message The message to print
 	 */
-	public verbosePrint(...message: Array<string>) {
+	public verbosePrint(tag: string | number | symbol, ...message: Array<string>) {
 		if (!this.verbose) return;
+		if (this.hiddenVerboseTags.has(tag)) return;
 
 		print('DISPATCHER:', ...message);
 	}
@@ -72,7 +83,7 @@ export class BaseDispatcher<Operations extends OperationMap> {
 		const dispatchQueue = this.boundOperations[handle] as OperationIdArray<Operations, Handle> | undefined;
 		const postDispatchQueue = this.boundPostOperations[handle] as OperationIdArray<Operations, Handle> | undefined;
 
-		this.verbosePrint(`Queued "${handle}" with ${dispatchQueue ? dispatchQueue.size() : 0}${postDispatchQueue ? ` (+${postDispatchQueue.size()})` : ''} bound.`);
+		this.verbosePrint(handle, `Queued "${handle}" with ${dispatchQueue ? dispatchQueue.size() : 0}${postDispatchQueue ? ` (+${postDispatchQueue.size()})` : ''} bound.`);
 
 		if (dispatchQueue) {
 			for (const [, handler] of pairs(dispatchQueue)) {
@@ -97,7 +108,7 @@ export class BaseDispatcher<Operations extends OperationMap> {
 		const caseNumber = this.caseNumber++;
 
 		let boundOperations = operations[handle];
-		
+
 		if (!boundOperations) {
 			boundOperations = new Map();
 			operations[handle] = boundOperations;
@@ -118,7 +129,7 @@ export class BaseDispatcher<Operations extends OperationMap> {
 	 * @param handler The handler to handle the invokation of the operation
 	 */
 	public listen<Handle extends keyof Operations>(handle: Handle, handler: Operations[Handle]): OperationExternalIdentifier<Operations> {
-		this.verbosePrint(`Bound "${handle}"`);
+		this.verbosePrint('bind', `Bound "${handle}"`);
 		return this.bindListen(handle, this.boundOperations, handler);
 	}
 
@@ -128,7 +139,7 @@ export class BaseDispatcher<Operations extends OperationMap> {
 	 * @param handler The handler to handle the invokation of the operation
 	 */
 	public listenPost<Handle extends keyof Operations>(handle: Handle, handler: Operations[Handle]): OperationExternalIdentifier<Operations> {
-		this.verbosePrint(`Bound "${handle}" to post`);
+		this.verbosePrint('bindpost', `Bound "${handle}" to post`);
 		return this.bindListen(handle, this.boundPostOperations, handler);
 	}
 

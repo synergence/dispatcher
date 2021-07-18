@@ -1,6 +1,7 @@
 import { BaseDispatcher, ClassOperationMap, OperationExternalIdentifier, OperationIdArray, OperationMap } from 'baseDispatcher';
 
 const ReplicatedStorage = game.GetService('ReplicatedStorage');
+const MessagingService = game.GetService('MessagingService');
 
 /**
  * Convert an array to a similar sized array of unknown
@@ -16,6 +17,21 @@ export type ServerParameterMapper<T extends Array<any>> = [Player, ...UnknownArr
  * Converts an operation map to an unknown operation map for use within the server dispatcher
  */
 export type UnknownOperationMap<T extends OperationMap> = {[K in keyof T]: (...args: ServerParameterMapper<Parameters<T[K]>>) => ReturnType<T[K]>};
+
+/**
+ * The message format for cross-server messaging. Shortened to save space.
+ */
+export interface DispatcherMessage {
+	/**
+	 * Handle
+	 */
+	h: string | number | symbol;
+
+	/**
+	 * Arguments
+	 */
+	a: Array<unknown>;
+}
 
 /**
  * Base dispatcher for the server. Note that you will need to require this at least once on the server for it to work.
@@ -96,6 +112,8 @@ export class BaseServerDispatcher<
 		this.remoteFunction.Name = 'DispatcherFunction';
 		this.remoteFunction.Parent = ReplicatedStorage;
 		this.remoteFunction.OnServerInvoke = (player, boundEvent, ...args: Array<unknown>) => this.onFunction(player, boundEvent, ...args);
+
+		MessagingService.SubscribeAsync('dispatcher', data => this.onPublish(data as DispatcherMessage));
 	}
 
 	protected incomingEvents: ClassOperationMap<UnknownOperationMap<ServerEvents>> = {};
@@ -104,11 +122,11 @@ export class BaseServerDispatcher<
 	/**
 	 * Verify that a remote exists and the client is not trying to invoke an invalid event
 	 * @param key The key of the remote
-	 * @param table The table to check in
+	 * @param checkingTable The table to check in
 	 */
-	private verifyRemoteExistance<T>(key: unknown, table: T): key is keyof T {
+	private verifyRemoteExistance<T>(key: unknown, checkingTable: T): key is keyof T {
 		if (!typeIs(key, 'string')) return false;
-		if (!(key in table)) return false;
+		if (!(key in checkingTable)) return false;
 
 		return true;
 	}
@@ -121,6 +139,18 @@ export class BaseServerDispatcher<
 	 */
 	public emit<Handle extends keyof ClientOperations>(player: Player, handle: Handle, ...args: Parameters<ClientOperations[Handle]>) {
 		this.remoteEvent.FireClient(player, handle, ...args as Array<unknown>);
+	}
+
+	/**
+	 * Publish an event for all servers to receive
+	 * @param handle The handle of the event
+	 * @param args The arguments of the event
+	 */
+	public publish<Handle extends keyof ServerOperations>(handle: Handle, ...args: Parameters<ServerOperations[Handle]>) {
+		MessagingService.PublishAsync('dispatcher', identity<DispatcherMessage>({
+			h: handle,
+			a: args
+		}));
 	}
 
 	/**
@@ -160,6 +190,41 @@ export class BaseServerDispatcher<
 			for (const [, handler] of incomingEvents) {
 				//@ts-ignore
 				handler(player, ...args);
+			}
+		}
+	}
+
+	/**
+	 * Internally transform the data for type safety for use in the next handler
+	 * @param rawData The data from MessagingService
+	 */
+	public onPublish(rawData: DispatcherMessage) {
+		const data = rawData as DispatcherMessage;
+
+		//@ts-ignore
+		this.handlePublish(data.h, ...data.a);
+	}
+
+	/**
+	 * Internally handle the function sent from the MessagingService for processing
+	 * @param handle The handle of the event
+	 * @param args The arguments of the event
+	 */
+	public handlePublish<Handle extends keyof ServerOperations>(handle: Handle, ...args: Parameters<ServerOperations[Handle]>) {
+		const dispatchQueue = this.boundOperations[handle] as OperationIdArray<ServerOperations, Handle> | undefined;
+		const postDispatchQueue = this.boundPostOperations[handle] as OperationIdArray<ServerOperations, Handle> | undefined;
+
+		this.verbosePrint(handle, `Queued cross-server "${handle}" with ${dispatchQueue ? dispatchQueue.size() : 0}${postDispatchQueue ? ` (+${postDispatchQueue.size()})` : ''} bound.`);
+
+		if (dispatchQueue) {
+			for (const [, handler] of pairs(dispatchQueue)) {
+				handler(...args as Array<unknown>);
+			}
+		}
+
+		if (postDispatchQueue) {
+			for (const [, handler] of pairs(postDispatchQueue)) {
+				handler(...args as Array<unknown>);
 			}
 		}
 	}
